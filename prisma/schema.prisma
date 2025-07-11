@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Evento {
+  id                    String     @id @default(cuid())
+  nome                  String
+  descricao             String
+  imagem                String?
+  data                  DateTime
+  local                 String
+  preco                 Float
+  ingressosDisponiveis  Int
+  ingressosTotal        Int
+  linkPagamento         String?
+  termosUso             String?
+  status                String     @default("ativo") // ativo, inativo, finalizado
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  
+  // Relacionamentos
+  ingressos             Ingresso[]
+  
+  @@map("eventos")
+}
+
+model Ingresso {
+  id          String   @id @default(cuid())
+  eventoId    String
+  cpf         String
+  nome        String
+  email       String
+  hash        String   @unique
+  dataCompra  DateTime @default(now())
+  status      String   @default("ativo") // ativo, usado, cancelado
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relacionamentos
+  evento      Evento   @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  
+  @@map("ingressos")
+  @@index([cpf])
+  @@index([hash])
+  @@index([status])
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  hash      String   @unique
+  nome      String
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("admins")
+}
+
+model Festa {
+  id                  String   @id @default(cuid())
+  nome                String
+  quantidadeTotal     Int
+  quantidadeVendidos  Int      @default(0)
+  valorUnitario       Float
+  data                DateTime
+  status              String   @default("ativa") // ativa, finalizada, cancelada
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@map("festas")
+}
+
