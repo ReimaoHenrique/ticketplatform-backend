@@ -35,9 +35,10 @@ model Evento {
 model Ingresso {
   id          String   @id @default(cuid())
   eventoId    String
-  cpf         String
+  nomeEvento  String?  // Nome do evento/festa (opcional temporariamente)
+  cpf         String?  // CPF agora é opcional
   nome        String
-  email       String
+  email       String?  // Email agora é opcional
   hash        String   @unique
   dataCompra  DateTime @default(now())
   status      String   @default("ativo") // ativo, usado, cancelado
@@ -63,19 +64,5 @@ model Admin {
   updatedAt DateTime @updatedAt
   
   @@map("admins")
-}
-
-model Festa {
-  id                  String   @id @default(cuid())
-  nome                String
-  quantidadeTotal     Int
-  quantidadeVendidos  Int      @default(0)
-  valorUnitario       Float
-  data                DateTime
-  status              String   @default("ativa") // ativa, finalizada, cancelada
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  
-  @@map("festas")
 }
 

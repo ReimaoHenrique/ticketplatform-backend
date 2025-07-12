@@ -8,4 +8,3 @@ import { IngressosController } from './ingressos.controller';
   exports: [IngressosService],
 })
 export class IngressosModule {}
-

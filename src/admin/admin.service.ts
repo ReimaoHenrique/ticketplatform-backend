@@ -26,18 +26,28 @@ export class AdminService {
   }
 
   async getDashboardData() {
-    // Buscar dados das festas
-    const festas = await this.prisma.festa.findMany({
+    // Buscar dados dos eventos
+    const eventos = await this.prisma.evento.findMany({
       orderBy: {
         data: 'desc',
       },
     });
 
     // Calcular métricas gerais
-    const totalEventos = festas.length;
-    const totalIngressosVendidos = festas.reduce((acc, festa) => acc + festa.quantidadeVendidos, 0);
-    const lucroAtual = festas.reduce((acc, festa) => acc + (festa.quantidadeVendidos * festa.valorUnitario), 0);
-    const lucroPotencial = festas.reduce((acc, festa) => acc + (festa.quantidadeTotal * festa.valorUnitario), 0);
+    const totalEventos = eventos.length;
+    const totalIngressosVendidos = await this.prisma.ingresso.count({
+      where: { status: 'ativo' },
+    });
+    const lucroAtual = eventos.reduce(
+      (acc, evento) =>
+        acc +
+        (evento.ingressosTotal - evento.ingressosDisponiveis) * evento.preco,
+      0,
+    );
+    const lucroPotencial = eventos.reduce(
+      (acc, evento) => acc + evento.ingressosTotal * evento.preco,
+      0,
+    );
 
     return {
       metricas: {
@@ -46,34 +56,19 @@ export class AdminService {
         lucroAtual,
         lucroPotencial,
       },
-      festas: festas.map(festa => ({
-        ...festa,
-        lucroAtual: festa.quantidadeVendidos * festa.valorUnitario,
-        lucroPotencial: festa.quantidadeTotal * festa.valorUnitario,
-        percentualVendido: Math.round((festa.quantidadeVendidos / festa.quantidadeTotal) * 100),
+      eventos: eventos.map((evento) => ({
+        ...evento,
+        vendidos: evento.ingressosTotal - evento.ingressosDisponiveis,
+        lucroAtual:
+          (evento.ingressosTotal - evento.ingressosDisponiveis) * evento.preco,
+        lucroPotencial: evento.ingressosTotal * evento.preco,
+        percentualVendido: Math.round(
+          ((evento.ingressosTotal - evento.ingressosDisponiveis) /
+            evento.ingressosTotal) *
+            100,
+        ),
       })),
     };
-  }
-
-  async getFestas() {
-    const festas = await this.prisma.festa.findMany({
-      orderBy: {
-        data: 'desc',
-      },
-    });
-
-    return festas.map(festa => ({
-      id: festa.id,
-      nome: festa.nome,
-      data: festa.data,
-      status: festa.status,
-      totalIngressos: festa.quantidadeTotal,
-      vendidos: festa.quantidadeVendidos,
-      valorUnitario: festa.valorUnitario,
-      lucroAtual: festa.quantidadeVendidos * festa.valorUnitario,
-      lucroPotencial: festa.quantidadeTotal * festa.valorUnitario,
-      percentualVendido: Math.round((festa.quantidadeVendidos / festa.quantidadeTotal) * 100),
-    }));
   }
 
   async getEstatisticasGerais() {
@@ -89,16 +84,18 @@ export class AdminService {
       where: { status: 'ativo' },
     });
 
-    // Estatísticas de festas
-    const totalFestas = await this.prisma.festa.count();
-    const festasAtivas = await this.prisma.festa.count({
-      where: { status: 'ativa' },
-    });
-
     // Receita total
-    const festas = await this.prisma.festa.findMany();
-    const receitaTotal = festas.reduce((acc, festa) => acc + (festa.quantidadeVendidos * festa.valorUnitario), 0);
-    const receitaPotencial = festas.reduce((acc, festa) => acc + (festa.quantidadeTotal * festa.valorUnitario), 0);
+    const eventos = await this.prisma.evento.findMany();
+    const receitaTotal = eventos.reduce(
+      (acc, evento) =>
+        acc +
+        (evento.ingressosTotal - evento.ingressosDisponiveis) * evento.preco,
+      0,
+    );
+    const receitaPotencial = eventos.reduce(
+      (acc, evento) => acc + evento.ingressosTotal * evento.preco,
+      0,
+    );
 
     return {
       eventos: {
@@ -109,14 +106,13 @@ export class AdminService {
         total: totalIngressos,
         ativos: ingressosAtivos,
       },
-      festas: {
-        total: totalFestas,
-        ativas: festasAtivas,
-      },
       receita: {
         atual: receitaTotal,
         potencial: receitaPotencial,
-        percentual: receitaPotencial > 0 ? Math.round((receitaTotal / receitaPotencial) * 100) : 0,
+        percentual:
+          receitaPotencial > 0
+            ? Math.round((receitaTotal / receitaPotencial) * 100)
+            : 0,
       },
     };
   }
@@ -126,4 +122,3 @@ export class AdminService {
     return hash === adminHash;
   }
 }
-

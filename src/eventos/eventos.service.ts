@@ -54,14 +54,12 @@ export class EventosService {
   async update(id: string, updateEventoDto: UpdateEventoDto) {
     await this.findOne(id); // Verifica se existe
 
-    const updateData: any = { ...updateEventoDto };
-    if (updateEventoDto.data) {
-      updateData.data = new Date(updateEventoDto.data);
-    }
-
     return this.prisma.evento.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateEventoDto,
+        ...(updateEventoDto.data && { data: new Date(updateEventoDto.data) }),
+      },
     });
   }
 
@@ -75,7 +73,7 @@ export class EventosService {
 
   async getIngressosDisponiveis(id: string) {
     const evento = await this.findOne(id);
-    
+
     const ingressosVendidos = await this.prisma.ingresso.count({
       where: {
         eventoId: id,
@@ -93,6 +91,65 @@ export class EventosService {
     };
   }
 
+  async getConvidados(id: string) {
+    // Verifica se o evento existe
+    await this.findOne(id);
+
+    const convidados = await this.prisma.ingresso.findMany({
+      where: {
+        eventoId: id,
+        status: 'ativo',
+      },
+      select: {
+        id: true,
+        cpf: true,
+        nome: true,
+        email: true,
+        hash: true,
+        dataCompra: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: {
+        dataCompra: 'desc',
+      },
+    });
+
+    return convidados;
+  }
+
+  async consultarConvidado(
+    id: string,
+    consultarDto: { cpf: string; nome: string },
+  ) {
+    // Verifica se o evento existe
+    await this.findOne(id);
+
+    const convidado = await this.prisma.ingresso.findFirst({
+      where: {
+        eventoId: id,
+        cpf: consultarDto.cpf,
+        nome: consultarDto.nome,
+        status: 'ativo',
+      },
+      include: {
+        evento: {
+          select: {
+            nome: true,
+            data: true,
+            local: true,
+          },
+        },
+      },
+    });
+
+    if (!convidado) {
+      throw new Error('Nenhum convidado encontrado com os dados informados');
+    }
+
+    return convidado;
+  }
+
   async updateIngressosDisponiveis(id: string, quantidade: number) {
     return this.prisma.evento.update({
       where: { id },
@@ -102,4 +159,3 @@ export class EventosService {
     });
   }
 }
-

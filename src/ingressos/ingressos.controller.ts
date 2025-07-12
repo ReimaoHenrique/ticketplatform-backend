@@ -32,7 +32,8 @@ export class IngressosController {
   @Post('consultar')
   async consultar(@Body() consultarIngressoDto: ConsultarIngressoDto) {
     try {
-      const ingressos = await this.ingressosService.consultar(consultarIngressoDto);
+      const ingressos =
+        await this.ingressosService.consultar(consultarIngressoDto);
       return {
         sucesso: true,
         mensagem: 'Ingresso encontrado',
@@ -85,10 +86,7 @@ export class IngressosController {
   }
 
   @Patch(':id/status')
-  async updateStatus(
-    @Param('id') id: string,
-    @Body('status') status: string,
-  ) {
+  async updateStatus(@Param('id') id: string, @Body('status') status: string) {
     const ingresso = await this.ingressosService.updateStatus(id, status);
     return {
       sucesso: true,
@@ -107,4 +105,3 @@ export class IngressosController {
     };
   }
 }
-

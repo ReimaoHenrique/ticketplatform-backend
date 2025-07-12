@@ -42,27 +42,6 @@ export class AdminController {
     };
   }
 
-  @Get('festas')
-  async getFestas(@Headers('authorization') authorization?: string) {
-    // Verificar autorização simples baseada no hash
-    if (!authorization) {
-      throw new UnauthorizedException('Token de autorização necessário');
-    }
-
-    const hash = authorization.replace('Bearer ', '');
-    const isValid = await this.adminService.verificarHash(hash);
-
-    if (!isValid) {
-      throw new UnauthorizedException('Token de autorização inválido');
-    }
-
-    const festas = await this.adminService.getFestas();
-    return {
-      sucesso: true,
-      data: festas,
-    };
-  }
-
   @Get('estatisticas')
   async getEstatisticas(@Headers('authorization') authorization?: string) {
     // Verificar autorização simples baseada no hash
@@ -94,4 +73,3 @@ export class AdminController {
     };
   }
 }
-

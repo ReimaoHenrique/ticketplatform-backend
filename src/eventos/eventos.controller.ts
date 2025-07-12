@@ -13,12 +13,14 @@ import {
 import { EventosService } from './eventos.service';
 import { CreateEventoDto } from './dto/create-evento.dto';
 import { UpdateEventoDto } from './dto/update-evento.dto';
+import { AdminGuard } from '../admin/admin.guard';
 
 @Controller('eventos')
 export class EventosController {
   constructor(private readonly eventosService: EventosService) {}
 
   @Post()
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createEventoDto: CreateEventoDto) {
     const evento = await this.eventosService.create(createEventoDto);
@@ -56,8 +58,46 @@ export class EventosController {
     };
   }
 
+  @Get(':id/convidados')
+  async getConvidados(@Param('id') id: string) {
+    const convidados = await this.eventosService.getConvidados(id);
+    return {
+      sucesso: true,
+      data: convidados,
+    };
+  }
+
+  @Post(':id/convidados/consultar')
+  async consultarConvidado(
+    @Param('id') id: string,
+    @Body() consultarDto: { cpf: string; nome: string },
+  ) {
+    try {
+      const convidado = await this.eventosService.consultarConvidado(
+        id,
+        consultarDto,
+      );
+      return {
+        sucesso: true,
+        mensagem: 'Convidado encontrado',
+        data: convidado,
+        hash: convidado.hash,
+      };
+    } catch (error) {
+      return {
+        sucesso: false,
+        mensagem: (error as Error).message,
+        data: null,
+      };
+    }
+  }
+
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateEventoDto: UpdateEventoDto) {
+  @UseGuards(AdminGuard)
+  async update(
+    @Param('id') id: string,
+    @Body() updateEventoDto: UpdateEventoDto,
+  ) {
     const evento = await this.eventosService.update(id, updateEventoDto);
     return {
       sucesso: true,
@@ -67,6 +107,7 @@ export class EventosController {
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string) {
     await this.eventosService.remove(id);
@@ -76,4 +117,3 @@ export class EventosController {
     };
   }
 }
-

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateIngressoDto } from './dto/create-ingresso.dto';
 import { ConsultarIngressoDto } from './dto/consultar-ingresso.dto';
@@ -27,29 +31,43 @@ export class IngressosService {
     });
 
     if (ingressosVendidos >= evento.ingressosTotal) {
-      throw new BadRequestException('Não há ingressos disponíveis para este evento');
+      throw new BadRequestException(
+        'Não há ingressos disponíveis para este evento',
+      );
     }
 
-    // Verificar se já existe ingresso para este CPF neste evento
-    const ingressoExistente = await this.prisma.ingresso.findFirst({
-      where: {
-        eventoId: createIngressoDto.eventoId,
-        cpf: createIngressoDto.cpf,
-        status: 'ativo',
-      },
-    });
+    // Verificar se já existe ingresso para este CPF neste evento (apenas se CPF foi fornecido)
+    if (createIngressoDto.cpf) {
+      const ingressoExistente = await this.prisma.ingresso.findFirst({
+        where: {
+          eventoId: createIngressoDto.eventoId,
+          cpf: createIngressoDto.cpf,
+          status: 'ativo',
+        },
+      });
 
-    if (ingressoExistente) {
-      throw new BadRequestException('Já existe um ingresso ativo para este CPF neste evento');
+      if (ingressoExistente) {
+        throw new BadRequestException(
+          'Já existe um ingresso ativo para este CPF neste evento',
+        );
+      }
     }
 
     // Gerar hash único para o ingresso
-    const hash = this.generateIngressoHash(createIngressoDto.cpf, createIngressoDto.eventoId);
+    const hash = this.generateIngressoHash(
+      createIngressoDto.cpf || '',
+      createIngressoDto.eventoId,
+    );
 
     return this.prisma.ingresso.create({
       data: {
-        ...createIngressoDto,
+        eventoId: createIngressoDto.eventoId,
+        nomeEvento: createIngressoDto.nomeEvento || evento.nome, // Usa o nome fornecido ou do evento
+        nome: createIngressoDto.nome,
+        email: createIngressoDto.email,
         hash,
+        status: createIngressoDto.status || 'ativo',
+        ...(createIngressoDto.cpf && { cpf: createIngressoDto.cpf }),
       },
       include: {
         evento: true,
@@ -87,10 +105,16 @@ export class IngressosService {
     const { cpf, nome } = consultarIngressoDto;
 
     if (!cpf && !nome) {
-      throw new BadRequestException('Informe pelo menos CPF ou nome para consulta');
+      throw new BadRequestException(
+        'Informe pelo menos CPF ou nome para consulta',
+      );
     }
 
-    const whereClause: any = {
+    const whereClause: {
+      status: string;
+      cpf?: string;
+      nome?: { contains: string; mode: 'insensitive' };
+    } = {
       status: 'ativo',
     };
 
@@ -116,7 +140,9 @@ export class IngressosService {
     });
 
     if (ingressos.length === 0) {
-      throw new NotFoundException('Nenhum ingresso encontrado com os dados informados');
+      throw new NotFoundException(
+        'Nenhum ingresso encontrado com os dados informados',
+      );
     }
 
     return ingressos;
@@ -180,4 +206,3 @@ export class IngressosService {
     };
   }
 }
-

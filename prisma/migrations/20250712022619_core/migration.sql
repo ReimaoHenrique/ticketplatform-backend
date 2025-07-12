@@ -20,7 +20,8 @@ CREATE TABLE "eventos" (
 CREATE TABLE "ingressos" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "eventoId" TEXT NOT NULL,
-    "cpf" TEXT NOT NULL,
+    "nomeEvento" TEXT,
+    "cpf" TEXT,
     "nome" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "hash" TEXT NOT NULL,
@@ -38,19 +39,6 @@ CREATE TABLE "admins" (
     "hash" TEXT NOT NULL,
     "nome" TEXT NOT NULL,
     "ativo" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
-);
-
--- CreateTable
-CREATE TABLE "festas" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "nome" TEXT NOT NULL,
-    "quantidadeTotal" INTEGER NOT NULL,
-    "quantidadeVendidos" INTEGER NOT NULL DEFAULT 0,
-    "valorUnitario" REAL NOT NULL,
-    "data" DATETIME NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'ativa',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
