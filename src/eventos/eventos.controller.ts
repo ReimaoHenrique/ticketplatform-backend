@@ -4,15 +4,20 @@ import {
   Post,
   Body,
   Patch,
+  Put,
   Param,
   Delete,
   UseGuards,
   HttpStatus,
   HttpCode,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { EventosService } from './eventos.service';
 import { CreateEventoDto } from './dto/create-evento.dto';
 import { UpdateEventoDto } from './dto/update-evento.dto';
+import { CreateConvidadoDto } from './dto/create-convidado.dto';
+import { ConsultarStatusDto } from './dto/consultar-status.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
 import { AdminGuard } from '../admin/admin.guard';
 
 @Controller('eventos')
@@ -41,7 +46,7 @@ export class EventosController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     const evento = await this.eventosService.findOne(id);
     return {
       sucesso: true,
@@ -50,7 +55,7 @@ export class EventosController {
   }
 
   @Get(':id/ingressos/disponiveis')
-  async getIngressosDisponiveis(@Param('id') id: string) {
+  async getIngressosDisponiveis(@Param('id', ParseIntPipe) id: number) {
     const data = await this.eventosService.getIngressosDisponiveis(id);
     return {
       sucesso: true,
@@ -59,7 +64,7 @@ export class EventosController {
   }
 
   @Get(':id/convidados')
-  async getConvidados(@Param('id') id: string) {
+  async getConvidados(@Param('id', ParseIntPipe) id: number) {
     const convidados = await this.eventosService.getConvidados(id);
     return {
       sucesso: true,
@@ -69,7 +74,7 @@ export class EventosController {
 
   @Post(':id/convidados/consultar')
   async consultarConvidado(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() consultarDto: { cpf: string; nome: string },
   ) {
     try {
@@ -81,7 +86,83 @@ export class EventosController {
         sucesso: true,
         mensagem: 'Convidado encontrado',
         data: convidado,
-        hash: convidado.hash,
+      };
+    } catch (error) {
+      return {
+        sucesso: false,
+        mensagem: (error as Error).message,
+        data: null,
+      };
+    }
+  }
+
+  @Post('convidados')
+  @HttpCode(HttpStatus.CREATED)
+  async createConvidado(@Body() createConvidadoDto: CreateConvidadoDto) {
+    try {
+      const convidado =
+        await this.eventosService.createConvidado(createConvidadoDto);
+      return {
+        sucesso: true,
+        mensagem: 'Convidado criado com sucesso',
+        data: convidado,
+      };
+    } catch (error) {
+      return {
+        sucesso: false,
+        mensagem: (error as Error).message,
+        data: null,
+      };
+    }
+  }
+
+  @Post('convidados/status')
+  async consultarStatus(@Body() consultarStatusDto: ConsultarStatusDto) {
+    try {
+      const resultado =
+        await this.eventosService.consultarStatus(consultarStatusDto);
+      return {
+        sucesso: true,
+        mensagem: 'Status consultado com sucesso',
+        data: resultado,
+      };
+    } catch (error) {
+      return {
+        sucesso: false,
+        mensagem: (error as Error).message,
+        data: null,
+      };
+    }
+  }
+
+  @Patch('convidados/status')
+  @UseGuards(AdminGuard)
+  async updateStatus(@Body() updateStatusDto: UpdateStatusDto) {
+    try {
+      const resultado = await this.eventosService.updateStatus(updateStatusDto);
+      return {
+        sucesso: true,
+        mensagem: 'Status atualizado com sucesso',
+        data: resultado,
+      };
+    } catch (error) {
+      return {
+        sucesso: false,
+        mensagem: (error as Error).message,
+        data: null,
+      };
+    }
+  }
+
+  @Put('convidados/status')
+  @UseGuards(AdminGuard)
+  async updateStatusPut(@Body() updateStatusDto: UpdateStatusDto) {
+    try {
+      const resultado = await this.eventosService.updateStatus(updateStatusDto);
+      return {
+        sucesso: true,
+        mensagem: 'Status atualizado com sucesso',
+        data: resultado,
       };
     } catch (error) {
       return {
@@ -95,7 +176,7 @@ export class EventosController {
   @Patch(':id')
   @UseGuards(AdminGuard)
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateEventoDto: UpdateEventoDto,
   ) {
     const evento = await this.eventosService.update(id, updateEventoDto);
@@ -109,7 +190,7 @@ export class EventosController {
   @Delete(':id')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', ParseIntPipe) id: number) {
     await this.eventosService.remove(id);
     return {
       sucesso: true,

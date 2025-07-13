@@ -35,8 +35,8 @@ export class AdminService {
 
     // Calcular métricas gerais
     const totalEventos = eventos.length;
-    const totalIngressosVendidos = await this.prisma.ingresso.count({
-      where: { status: 'ativo' },
+    const totalConvidadosConfirmados = await this.prisma.convidado.count({
+      where: { status: 'confirmado' },
     });
     const lucroAtual = eventos.reduce(
       (acc, evento) =>
@@ -52,7 +52,7 @@ export class AdminService {
     return {
       metricas: {
         totalEventos,
-        totalIngressosVendidos,
+        totalConvidadosConfirmados,
         lucroAtual,
         lucroPotencial,
       },
@@ -78,10 +78,10 @@ export class AdminService {
       where: { status: 'ativo' },
     });
 
-    // Estatísticas de ingressos
-    const totalIngressos = await this.prisma.ingresso.count();
-    const ingressosAtivos = await this.prisma.ingresso.count({
-      where: { status: 'ativo' },
+    // Estatísticas de convidados
+    const totalConvidados = await this.prisma.convidado.count();
+    const convidadosConfirmados = await this.prisma.convidado.count({
+      where: { status: 'confirmado' },
     });
 
     // Receita total
@@ -102,9 +102,9 @@ export class AdminService {
         total: totalEventos,
         ativos: eventosAtivos,
       },
-      ingressos: {
-        total: totalIngressos,
-        ativos: ingressosAtivos,
+      convidados: {
+        total: totalConvidados,
+        confirmados: convidadosConfirmados,
       },
       receita: {
         atual: receitaTotal,

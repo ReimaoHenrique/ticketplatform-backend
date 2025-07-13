@@ -11,7 +11,7 @@ datasource db {
 }
 
 model Evento {
-  id                    String     @id @default(cuid())
+  id                    Int        @id @default(autoincrement())
   nome                  String
   descricao             String
   imagem                String?
@@ -27,32 +27,13 @@ model Evento {
   updatedAt             DateTime   @updatedAt
   
   // Relacionamentos
-  ingressos             Ingresso[]
+  convidados            Convidado[]
   
   @@map("eventos")
 }
 
-model Ingresso {
-  id          String   @id @default(cuid())
-  eventoId    String
-  nomeEvento  String?  // Nome do evento/festa (opcional temporariamente)
-  cpf         String?  // CPF agora é opcional
-  nome        String
-  email       String?  // Email agora é opcional
-  hash        String   @unique
-  dataCompra  DateTime @default(now())
-  status      String   @default("ativo") // ativo, usado, cancelado
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relacionamentos
-  evento      Evento   @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  
-  @@map("ingressos")
-  @@index([cpf])
-  @@index([hash])
-  @@index([status])
-}
+
+
 
 model Admin {
   id        String   @id @default(cuid())
@@ -64,5 +45,27 @@ model Admin {
   updatedAt DateTime @updatedAt
   
   @@map("admins")
+}
+
+model Convidado {
+  id          String   @id @default(cuid())
+  nome        String
+  email       String?  // Email opcional
+  telefone    String?  // Telefone opcional
+  cpf         String?  // CPF opcional
+  eventoId    Int
+  status      String   @default("pendente") // pendente, confirmado, cancelado
+  observacoes String?  // Observações adicionais
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relacionamentos
+  evento      Evento   @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  
+  @@map("convidados")
+  @@index([eventoId])
+  @@index([status])
+  @@index([email])
+  @@index([cpf])
 }
 

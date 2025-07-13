@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventoDto } from './dto/create-evento.dto';
 import { UpdateEventoDto } from './dto/update-evento.dto';
+import { CreateConvidadoDto } from './dto/create-convidado.dto';
+import { ConsultarStatusDto } from './dto/consultar-status.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
 
 @Injectable()
 export class EventosService {
@@ -21,7 +28,7 @@ export class EventosService {
       include: {
         _count: {
           select: {
-            ingressos: true,
+            convidados: true,
           },
         },
       },
@@ -31,14 +38,14 @@ export class EventosService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: number) {
     const evento = await this.prisma.evento.findUnique({
       where: { id },
       include: {
-        ingressos: true,
+        convidados: true,
         _count: {
           select: {
-            ingressos: true,
+            convidados: true,
           },
         },
       },
@@ -51,7 +58,7 @@ export class EventosService {
     return evento;
   }
 
-  async update(id: string, updateEventoDto: UpdateEventoDto) {
+  async update(id: number, updateEventoDto: UpdateEventoDto) {
     await this.findOne(id); // Verifica se existe
 
     return this.prisma.evento.update({
@@ -63,7 +70,7 @@ export class EventosService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: number) {
     await this.findOne(id); // Verifica se existe
 
     return this.prisma.evento.delete({
@@ -71,47 +78,46 @@ export class EventosService {
     });
   }
 
-  async getIngressosDisponiveis(id: string) {
+  async getIngressosDisponiveis(id: number) {
     const evento = await this.findOne(id);
 
-    const ingressosVendidos = await this.prisma.ingresso.count({
+    const convidadosConfirmados = await this.prisma.convidado.count({
       where: {
         eventoId: id,
-        status: 'ativo',
+        status: 'confirmado',
       },
     });
 
     return {
       eventoId: id,
-      ingressosDisponiveis: evento.ingressosTotal - ingressosVendidos,
+      ingressosDisponiveis: evento.ingressosTotal - convidadosConfirmados,
       ingressosTotal: evento.ingressosTotal,
-      ingressosVendidos,
+      ingressosVendidos: convidadosConfirmados,
       preco: evento.preco,
       linkPagamento: evento.linkPagamento,
     };
   }
 
-  async getConvidados(id: string) {
+  async getConvidados(id: number) {
     // Verifica se o evento existe
     await this.findOne(id);
 
-    const convidados = await this.prisma.ingresso.findMany({
+    const convidados = await this.prisma.convidado.findMany({
       where: {
         eventoId: id,
-        status: 'ativo',
       },
       select: {
         id: true,
         cpf: true,
         nome: true,
         email: true,
-        hash: true,
-        dataCompra: true,
+        telefone: true,
         status: true,
+        observacoes: true,
         createdAt: true,
       },
       orderBy: {
-        dataCompra: 'desc',
+        createdAt: 'desc',
       },
     });
 
@@ -119,18 +125,17 @@ export class EventosService {
   }
 
   async consultarConvidado(
-    id: string,
+    id: number,
     consultarDto: { cpf: string; nome: string },
   ) {
     // Verifica se o evento existe
     await this.findOne(id);
 
-    const convidado = await this.prisma.ingresso.findFirst({
+    const convidado = await this.prisma.convidado.findFirst({
       where: {
         eventoId: id,
         cpf: consultarDto.cpf,
         nome: consultarDto.nome,
-        status: 'ativo',
       },
       include: {
         evento: {
@@ -150,12 +155,157 @@ export class EventosService {
     return convidado;
   }
 
-  async updateIngressosDisponiveis(id: string, quantidade: number) {
+  async updateIngressosDisponiveis(id: number, quantidade: number) {
     return this.prisma.evento.update({
       where: { id },
       data: {
         ingressosDisponiveis: quantidade,
       },
     });
+  }
+
+  async createConvidado(createConvidadoDto: CreateConvidadoDto) {
+    // Verificar se o evento existe
+    const evento = await this.prisma.evento.findUnique({
+      where: { id: createConvidadoDto.eventoId },
+    });
+
+    if (!evento) {
+      throw new NotFoundException(
+        `Evento com ID ${createConvidadoDto.eventoId} não encontrado`,
+      );
+    }
+
+    // Verificar se ainda há ingressos disponíveis
+    if (evento.ingressosDisponiveis <= 0) {
+      throw new BadRequestException(
+        'Não há mais ingressos disponíveis para este evento',
+      );
+    }
+
+    // Verificar se o CPF já está cadastrado para este evento
+    const convidadoExistente = await this.prisma.convidado.findFirst({
+      where: {
+        eventoId: createConvidadoDto.eventoId,
+        cpf: createConvidadoDto.cpf,
+      },
+    });
+
+    if (convidadoExistente) {
+      throw new BadRequestException('CPF já cadastrado para este evento');
+    }
+
+    // Criar o convidado
+    const convidado = await this.prisma.convidado.create({
+      data: {
+        nome: createConvidadoDto.nome,
+        cpf: createConvidadoDto.cpf,
+        email: createConvidadoDto.email,
+        eventoId: createConvidadoDto.eventoId,
+        status: 'pendente',
+      },
+    });
+
+    // Atualizar ingressos disponíveis
+    await this.prisma.evento.update({
+      where: { id: createConvidadoDto.eventoId },
+      data: {
+        ingressosDisponiveis: evento.ingressosDisponiveis - 1,
+      },
+    });
+
+    return convidado;
+  }
+
+  async consultarStatus(consultarStatusDto: ConsultarStatusDto) {
+    const { cpf, email } = consultarStatusDto;
+
+    if (!cpf && !email) {
+      throw new BadRequestException('CPF ou email deve ser fornecido');
+    }
+
+    const whereCondition: any = {};
+
+    if (cpf) {
+      whereCondition.cpf = cpf;
+    }
+
+    if (email) {
+      whereCondition.email = email;
+    }
+
+    const convidado = await this.prisma.convidado.findFirst({
+      where: whereCondition,
+      include: {
+        evento: {
+          select: {
+            id: true,
+            nome: true,
+            data: true,
+            local: true,
+          },
+        },
+      },
+    });
+
+    if (!convidado) {
+      throw new NotFoundException('Convidado não encontrado');
+    }
+
+    return {
+      status: convidado.status,
+      evento: {
+        nome: convidado.evento.nome,
+        data: convidado.evento.data,
+        local: convidado.evento.local,
+      },
+    };
+  }
+
+  async updateStatus(updateStatusDto: UpdateStatusDto) {
+    const { email, status } = updateStatusDto;
+
+    // Buscar o convidado pelo email
+    const convidado = await this.prisma.convidado.findFirst({
+      where: { email },
+      include: {
+        evento: {
+          select: {
+            id: true,
+            nome: true,
+            data: true,
+            local: true,
+          },
+        },
+      },
+    });
+
+    if (!convidado) {
+      throw new NotFoundException('Convidado não encontrado');
+    }
+
+    // Atualizar o status
+    const convidadoAtualizado = await this.prisma.convidado.update({
+      where: { id: convidado.id },
+      data: { status },
+      include: {
+        evento: {
+          select: {
+            nome: true,
+            data: true,
+            local: true,
+          },
+        },
+      },
+    });
+
+    return {
+      status: convidadoAtualizado.status,
+      evento: {
+        nome: convidadoAtualizado.evento.nome,
+        data: convidadoAtualizado.evento.data,
+        local: convidadoAtualizado.evento.local,
+      },
+    };
   }
 }

@@ -6,7 +6,7 @@ async function main() {
   console.log('🌱 Iniciando seed do banco de dados...');
 
   // Limpar dados existentes
-  await prisma.ingresso.deleteMany();
+  await prisma.convidado.deleteMany();
   await prisma.evento.deleteMany();
   await prisma.admin.deleteMany();
 
@@ -36,7 +36,6 @@ async function main() {
       ingressosTotal: 500,
       linkPagamento: 'https://pagamento.exemplo.com/festival-eletronica',
       termosUso: 'Ao comprar você concorda com nossos termos de entrada.',
-      status: 'ativo',
     },
   });
 
@@ -53,7 +52,6 @@ async function main() {
       ingressosTotal: 300,
       linkPagamento: 'https://pagamento.exemplo.com/rock-nacional',
       termosUso: 'Proibido menores de 16 anos.',
-      status: 'ativo',
     },
   });
 
@@ -70,7 +68,6 @@ async function main() {
       ingressosTotal: 200,
       linkPagamento: 'https://pagamento.exemplo.com/ano-novo',
       termosUso: 'Evento exclusivo para maiores de 18 anos.',
-      status: 'ativo',
     },
   });
 
@@ -80,47 +77,45 @@ async function main() {
     evento3.nome,
   ]);
 
-  // Criar alguns ingressos de exemplo
-  const ingresso1 = await prisma.ingresso.create({
+  // Criar alguns convidados de exemplo
+  const convidado1 = await prisma.convidado.create({
     data: {
       eventoId: evento1.id,
-      nomeEvento: evento1.nome,
-      cpf: '123.456.789-00',
       nome: 'João Silva',
       email: 'joao@exemplo.com',
-      hash: 'abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567890abcdef123',
-      status: 'ativo',
+      cpf: '123.456.789-00',
+      telefone: '(11) 99999-9999',
+      status: 'confirmado',
+      observacoes: 'Convidado VIP',
     },
   });
 
-  const ingresso2 = await prisma.ingresso.create({
+  const convidado2 = await prisma.convidado.create({
     data: {
       eventoId: evento2.id,
-      nomeEvento: evento2.nome,
-      cpf: '987.654.321-00',
       nome: 'Maria Santos',
       email: 'maria@exemplo.com',
-      hash: 'def456ghi789jkl012mno345pqr678stu901vwx234yz567890abcdef123abc123',
-      status: 'ativo',
+      cpf: '987.654.321-00',
+      telefone: '(21) 88888-8888',
+      status: 'pendente',
     },
   });
 
-  const ingresso3 = await prisma.ingresso.create({
+  const convidado3 = await prisma.convidado.create({
     data: {
       eventoId: evento3.id,
-      nomeEvento: evento3.nome,
-      cpf: '456.789.123-00',
       nome: 'Pedro Oliveira',
       email: 'pedro@exemplo.com',
-      hash: 'ghi789jkl012mno345pqr678stu901vwx234yz567890abcdef123abc123def456',
-      status: 'ativo',
+      cpf: '456.789.123-00',
+      telefone: '(61) 77777-7777',
+      status: 'confirmado',
     },
   });
 
-  console.log('✅ Ingressos criados:', [
-    ingresso1.nome,
-    ingresso2.nome,
-    ingresso3.nome,
+  console.log('✅ Convidados criados:', [
+    convidado1.nome,
+    convidado2.nome,
+    convidado3.nome,
   ]);
 }
 

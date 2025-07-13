@@ -4,7 +4,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { EventosModule } from './eventos/eventos.module';
-import { IngressosModule } from './ingressos/ingressos.module';
 import { AdminModule } from './admin/admin.module';
 
 @Module({
@@ -14,7 +13,6 @@ import { AdminModule } from './admin/admin.module';
     }),
     PrismaModule,
     EventosModule,
-    IngressosModule,
     AdminModule,
   ],
   controllers: [AppController],
