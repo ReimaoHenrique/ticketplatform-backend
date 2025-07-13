@@ -9,6 +9,7 @@ import { UpdateEventoDto } from './dto/update-evento.dto';
 import { CreateConvidadoDto } from './dto/create-convidado.dto';
 import { ConsultarStatusDto } from './dto/consultar-status.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateStatusByIdDto } from './dto/update-status-by-id.dto';
 
 @Injectable()
 export class EventosService {
@@ -287,6 +288,53 @@ export class EventosService {
     // Atualizar o status
     const convidadoAtualizado = await this.prisma.convidado.update({
       where: { id: convidado.id },
+      data: { status },
+      include: {
+        evento: {
+          select: {
+            nome: true,
+            data: true,
+            local: true,
+          },
+        },
+      },
+    });
+
+    return {
+      status: convidadoAtualizado.status,
+      evento: {
+        nome: convidadoAtualizado.evento.nome,
+        data: convidadoAtualizado.evento.data,
+        local: convidadoAtualizado.evento.local,
+      },
+    };
+  }
+
+  async updateStatusById(updateStatusByIdDto: UpdateStatusByIdDto) {
+    const { id, status } = updateStatusByIdDto;
+
+    // Buscar o convidado pelo ID
+    const convidado = await this.prisma.convidado.findUnique({
+      where: { id },
+      include: {
+        evento: {
+          select: {
+            id: true,
+            nome: true,
+            data: true,
+            local: true,
+          },
+        },
+      },
+    });
+
+    if (!convidado) {
+      throw new NotFoundException('Convidado não encontrado');
+    }
+
+    // Atualizar o status
+    const convidadoAtualizado = await this.prisma.convidado.update({
+      where: { id },
       data: { status },
       include: {
         evento: {

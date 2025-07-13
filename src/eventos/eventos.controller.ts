@@ -18,6 +18,7 @@ import { UpdateEventoDto } from './dto/update-evento.dto';
 import { CreateConvidadoDto } from './dto/create-convidado.dto';
 import { ConsultarStatusDto } from './dto/consultar-status.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateStatusByIdDto } from './dto/update-status-by-id.dto';
 import { AdminGuard } from '../admin/admin.guard';
 
 @Controller('eventos')
@@ -159,6 +160,26 @@ export class EventosController {
   async updateStatusPut(@Body() updateStatusDto: UpdateStatusDto) {
     try {
       const resultado = await this.eventosService.updateStatus(updateStatusDto);
+      return {
+        sucesso: true,
+        mensagem: 'Status atualizado com sucesso',
+        data: resultado,
+      };
+    } catch (error) {
+      return {
+        sucesso: false,
+        mensagem: (error as Error).message,
+        data: null,
+      };
+    }
+  }
+
+  @Put('convidados/status/id')
+  @UseGuards(AdminGuard)
+  async updateStatusById(@Body() updateStatusByIdDto: UpdateStatusByIdDto) {
+    try {
+      const resultado =
+        await this.eventosService.updateStatusById(updateStatusByIdDto);
       return {
         sucesso: true,
         mensagem: 'Status atualizado com sucesso',
